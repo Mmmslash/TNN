@@ -1,24 +1,24 @@
 function RangeManager()
   local ranges = {
-      ["easy_range"] = { ['spawner'] = SPAWN:New("Easy Range"), 
+      ["easy_range"] = { ['spawner'] = SPAWN:New("Easy Range"),
                          ['zone'] = ZONE:New("Easy Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Blue,
                          ['label'] = "Easy"
                        }
   }
-  
+
   function SpawnRange(self, range)
     self.Ranges[range]['group'] = self.Ranges[range]['spawner']:ReSpawn()
     return self.Ranges[range]['group']
   end
-  
+
   function ForEachRange(self, fn)
     for idx, range in pairs(self.Ranges) do
       fn(idx, range)
     end
   end
-  
+
   return { SpawnRange = SpawnRange,
            Ranges = ranges,
            ForEachRange = ForEachRange }
