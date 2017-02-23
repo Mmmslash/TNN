@@ -6,7 +6,13 @@ function RangeManager()
                          ['smoke_color'] = SMOKECOLOR.Blue,
                          ['label'] = "Easy"
                        },
-     ["hard_range"] = { ['spawner'] = SPAWN:New("Hard Range"),
+      ["medium_range"] = { ['spawner'] = SPAWN:New("Medium Range"),
+                         ['zone'] = ZONE:New("Medium Range"),
+                         ['type'] = 'ground',
+                         ['smoke_color'] = SMOKECOLOR.Orange,
+                         ['label'] = "Medium"
+                       },
+      ["hard_range"] = { ['spawner'] = SPAWN:New("Hard Range"),
                          ['zone'] = ZONE:New("Hard Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Red,
