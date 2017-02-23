@@ -5,7 +5,13 @@ function RangeManager()
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Blue,
                          ['label'] = "Easy"
-                       }
+                       },
+     ["hard_range"] = { ['spawner'] = SPAWN:New("Hard Range"),
+                         ['zone'] = ZONE:New("Hard Range"),
+                         ['type'] = 'ground',
+                         ['smoke_color'] = SMOKECOLOR.Red,
+                         ['label'] = "Hard"
+                       },
   }
 
   function SpawnRange(self, range)
