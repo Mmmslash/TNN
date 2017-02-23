@@ -21,8 +21,9 @@ function RangeManager()
   }
 
   function SpawnRange(self, range)
-    self.Ranges[range]['group'] = self.Ranges[range]['spawner']:ReSpawn()
-    return self.Ranges[range]['group']
+    pcall(function() self.Ranges[range]['group']:Destroy() end)
+    MESSAGE:New(self.Ranges[range]['label'] .. " Range is respawning.",10,"Range Respawns"):ToAll()
+    SCHEDULER:New(nil,function()self.Ranges[range]['group'] = self.Ranges[range]['spawner']:ReSpawn()end,{},2,1000,0,11)
   end
 
   function ForEachRange(self, fn)
@@ -50,5 +51,22 @@ function CreateRangeRadioMenus(RangeManager)
   end)
 end
 
+function SetupRangeRespawn(RangeManager)
+  RangeManager:ForEachRange(function(range_name, range)
+    for unitid,unitdata in pairs(range['group']:GetUnits()) do
+      unitdata:HandleEvent(EVENTS.Dead)
+      function unitdata:OnEventDead(EventData)
+        success,schedulerid = pcall(function() SCHEDULER:Remove(range['scheduler_id']) end)
+        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,1200,0,11)
+        range['scheduler_id'] = s_id
+      end
+    end
+  end)
+end
+
 rangeManager = RangeManager()
-CreateRangeRadioMenus(rangeManager)
+rangeManager:SpawnRange('easy_range')
+rangeManager:SpawnRange('medium_range')
+rangeManager:SpawnRange('hard_range')
+SCHEDULER:New(nil,function()CreateRangeRadioMenus(rangeManager)end,{},3,1000,0,21)
+SCHEDULER:New(nil,function()SetupRangeRespawn(rangeManager)end,{},4,1000,0,21)
