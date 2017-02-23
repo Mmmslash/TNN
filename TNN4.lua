@@ -57,7 +57,7 @@ function SetupRangeRespawn(RangeManager)
       unitdata:HandleEvent(EVENTS.Dead)
       function unitdata:OnEventDead(EventData)
         success,schedulerid = pcall(function() SCHEDULER:Remove(range['scheduler_id']) end)
-        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,1200,0,11)
+        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,1200,0,601)
         range['scheduler_id'] = s_id
       end
     end
