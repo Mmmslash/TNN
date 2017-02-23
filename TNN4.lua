@@ -4,19 +4,25 @@ function RangeManager()
                          ['zone'] = ZONE:New("Easy Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Blue,
-                         ['label'] = "Easy"
+                         ['label'] = "Easy",
+                         ['latlong'] = '41 50\' 46" N   41 46\' 51" E',
+                         ['mgrs'] = '37T GG 32306 36033'
                        },
       ["medium_range"] = { ['spawner'] = SPAWN:New("Medium Range"),
                          ['zone'] = ZONE:New("Medium Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Orange,
-                         ['label'] = "Medium"
+                         ['label'] = "Medium",
+                         ['latlong'] = '42 10\' 40" N   42 28\' 54" E',
+                         ['mgrs'] = '38T KM 92029 72577'
                        },
       ["hard_range"] = { ['spawner'] = SPAWN:New("Hard Range"),
                          ['zone'] = ZONE:New("Hard Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Red,
-                         ['label'] = "Hard"
+                         ['label'] = "Hard",
+                         ['latlong'] = '42 45\' 33" N 42 1\' 52" E',
+                         ['mgrs'] = '38T KN 57013 38373'
                        },
   }
 
