@@ -30,13 +30,14 @@ function RangeSmoke(range)
   range.zone:SmokeZone(range.smoke_color, 4)
 end
 
-function CreateRangeRadioMenus()
+function CreateRangeRadioMenus(RangeManager)
   local ranges_parent_menu = MENU_MISSION:New("Ranges")
-  rangeManager:ForEachRange(function(range_name, range)
+  local range_manager = RangeManager
+  range_manager:ForEachRange(function(range_name, range)
     local range_parent_menu = MENU_MISSION:New(range.label, ranges_parent_menu)
     MENU_MISSION_COMMAND:New("Start Smoke", range_parent_menu, RangeSmoke, range)
     MENU_MISSION_COMMAND:New("Respawn", range_parent_menu, rangeManager.SpawnRange, rangeManager, range_name)
   end)
 end
 
-CreateRangeRadioMenus()
+CreateRangeRadioMenus(rangeManager)
