@@ -24,8 +24,6 @@ function RangeManager()
            ForEachRange = ForEachRange }
 end
 
-rangeManager = RangeManager()
-
 function RangeSmoke(range)
   range.zone:SmokeZone(range.smoke_color, 4)
 end
@@ -40,4 +38,5 @@ function CreateRangeRadioMenus(RangeManager)
   end)
 end
 
+rangeManager = RangeManager()
 CreateRangeRadioMenus(rangeManager)
