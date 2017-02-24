@@ -66,8 +66,8 @@ function RangeManager()
   end
 
   return { SpawnRange = SpawnRange,
-           Ranges = ranges,
-           ForEachRange = ForEachRange }
+    Ranges = ranges,
+    ForEachRange = ForEachRange }
 end
 
 function DroneManager()
@@ -135,12 +135,16 @@ function RangeSmoke(range)
 end
 
 function CreateRangeRadioMenus(RangeManager)
+  env.info("setting up radios")
   local ranges_parent_menu = MENU_MISSION:New("Ranges")
   local range_manager = RangeManager
   range_manager:ForEachRange(function(range_name, range)
     local range_parent_menu = MENU_MISSION:New(range.label, ranges_parent_menu)
     MENU_MISSION_COMMAND:New("Start Smoke", range_parent_menu, RangeSmoke, range)
     MENU_MISSION_COMMAND:New("Respawn", range_parent_menu, rangeManager.SpawnRange, rangeManager, range_name)
+    SET_CLIENT:New():FilterCoalitions("blue"):FilterStart():ForEachClient(function(client)
+      MENU_CLIENT_COMMAND:New(client,"Get Bearing And Range", range_parent_menu, SendBearingToRangeMessageToClient, client, range)
+    end)
   end)
 end
 
@@ -170,7 +174,6 @@ function SetupRangeRespawn(RangeManager)
     end,{},0,10)
   end)
 end
-
 
 function SetupTankers()
   local spawn_tkr_1 = SPAWN:New('Tanker 1'):InitLimit(1,0):InitRepeat()
@@ -219,6 +222,49 @@ rangeManager:SpawnRange('medium_range')
 rangeManager:SpawnRange('hard_range')
 rangeManager:SpawnRange('ship_range_easy')
 rangeManager:SpawnRange('ship_range_medium')
+
+function SendBearingToRangeMessageToClient(client, range)
+  local messageText = [[
+  Bearing and distance to %range_name% is: %bearing%° - %distance%
+  ]]
+  messageText = string.gsub(messageText, "%range_name%", range.label)
+  messageText = string.gsub(messageText, "%bearing%", GetBearingToRange(client, range))
+  messageText = string.gsub(messageText, "%distance%", GetDistanceToRange(client, range))
+
+  local message = MESSAGE:New(messageText,MessageDuration,MessageCategory)
+end
+
+function GetDistanceToRange(positionable, range)
+  local range_loc_vec2 = ZONE_BASE.GetVec2(range.zone)
+  local positionable_vec2 = POSITIONABLE.GetPointVec2(positionable)
+
+  return positionable_vec2:DistanceFromVec2(range_loc_vec2)
+end
+
+function GetBearingToRange(positionable, range)
+  local range_loc_vec2 = ZONE_BASE.GetVec2(range.zone)
+  local positionable_vec2 = POSITIONABLE.GetVec2(positionable)
+  return GetBearingFrom(positionable_vec2).to(range_loc_vec2)
+end
+
+function GetBearingFrom(pt1)
+  local toFunc = function(pt2)
+    vx,vy = pt2.x - pt1.x, pt2.y - pt1.y
+
+    t = math.atan2(vx,vy)
+    if t < 0.0 then
+      t = t + 6.283
+    end
+    return math.deg(t)
+  end
+  return {to = toFunc}
+end
+
+
+rangeManager = RangeManager()
+rangeManager:ForEachRange(function(range_name, _range)
+  rangeManager:SpawnRange(range_name)
+end)
 
 droneManager = DroneManager()
 SCHEDULER:New(nil,function()
