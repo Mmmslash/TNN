@@ -24,6 +24,22 @@ function RangeManager()
                          ['latlong'] = '42 45\' 33" N 42 1\' 52" E',
                          ['mgrs'] = '38T KN 57013 38373'
                        },
+      ["ship_range_easy"] = { ['spawner'] = SPAWN:New("Ship Range Easy"):InitLimit(30,0),
+                         ['zone'] = ZONE:New("Ship Range Easy"),
+                         ['type'] = 'ground',
+                         ['smoke_color'] = SMOKECOLOR.Green,
+                         ['label'] = "Easy Ship",
+                         ['latlong'] = '41 29\' 38" N 41 11\' 31" E',
+                         ['mgrs'] = '38T KN 57013 38373'
+                       },
+      ["ship_range_medium"] = { ['spawner'] = SPAWN:New("Ship Range Medium"):InitLimit(30,0),
+                         ['zone'] = ZONE:New("Ship Range Medium"),
+                         ['type'] = 'ground',
+                         ['smoke_color'] = SMOKECOLOR.Green,
+                         ['label'] = "Medium Ship",
+                         ['latlong'] = '41 29\' 38" N 41 11\' 31" E',
+                         ['mgrs'] = '38T KN 57013 38373'
+                       }
   }
 
   function SpawnRange(self, range)
@@ -148,10 +164,33 @@ function SetupRangeRespawn(RangeManager)
 end
 
 
+function SetupTankers()
+  local spawn_tkr_1 = SPAWN:New('Tanker 1'):InitLimit(1,0):InitRepeat()
+  local spawn_tkr_2 = SPAWN:New('Tanker 2'):InitLimit(1,0):InitRepeat()
+  
+  SCHEDULER:New(nil,function()
+     spawn_tkr_1:Spawn()
+     spawn_tkr_2:Spawn()
+  end,{},0,10,0,nil)
+end
+
+
+function SetupAWACS()
+  local spawn_awacs_1 = SPAWN:New('AWACS 1'):InitLimit(1,0):InitRepeat()
+  local spawn_awacs_2 = SPAWN:New('AWACS 2'):InitLimit(1,0):InitRepeat()
+  
+  SCHEDULER:New(nil,function()
+     spawn_awacs_1:Spawn()
+     spawn_awacs_2:Spawn()
+  end,{},0,10,0,nil)
+end
+
 rangeManager = RangeManager()
 rangeManager:SpawnRange('easy_range')
 rangeManager:SpawnRange('medium_range')
 rangeManager:SpawnRange('hard_range')
+rangeManager:SpawnRange('ship_range_easy')
+rangeManager:SpawnRange('ship_range_medium')
 
 droneManager = DroneManager()
 SCHEDULER:New(nil,function()
@@ -162,4 +201,6 @@ end,{},10,10,0, nil)
 
 SCHEDULER:New(nil,function()CreateRangeRadioMenus(rangeManager)end,{},10,nil,0)
 SCHEDULER:New(nil,function()SetupRangeRespawn(rangeManager)end,{},10,nil,0)
+SetupTankers()
+SetupAWACS()
 
