@@ -43,12 +43,15 @@ function RangeManager()
   }
 
   function SpawnRange(self, range)
+    env.info("Starting range spawn: " .. range)
     MESSAGE:New(self.Ranges[range]['label'] .. " Range is respawning.",10,"Range Respawns"):ToAll()
     pcall(function()
         self.Ranges[range]['group']:Destroy()
         env.info("Destroyed range " .. self.Ranges[range]['label'])
      end)
-    SCHEDULER:New(nil,function()self.Ranges[range]['group'] = self.Ranges[range]['spawner']:ReSpawn()end,{},2,nil,0,nil)
+    env.info("Scheduling ReSpawn")
+    SCHEDULER:New(nil,function()self.Ranges[range]['group'] = self.Ranges[range]['spawner']:Spawn()end,{},5)
+    env.info("Respawn scheduled")
   end
 
   function ForEachRange(self, fn)
@@ -84,30 +87,31 @@ function DroneManager()
       ['label'] = "Hard Air-to-Air Drones"
     }
   }
-  
+
   function SpawnDrones(self, drones)
-    pcall(function() 
-      for group_name,group in pairs(self.Drones[drones]['groups']) do 
-        --group:Destroy()
-      end
-    end)
-    
+    env.info("Trying to spawn drone: " .. drones)
     self.Drones[drones]['groups'] = {}
-    
-    SCHEDULER:New(nil,function()
-        for idx,spawner in ipairs(self.Drones[drones]['spawners']) do
-          local spawned_group = spawner:Spawn()
-          if spawned_group ~= nil then
-            env.info("Name of spawned group: " .. spawned_group.GroupName)
-            table.insert(self.Drones[drones]['groups'],spawned_group)
-            local AICapZone = AI_CAP_ZONE:New( self.Drones[drones]['zone'], 5000, 7000, 500, 780, "BARO")
-            AICapZone:SetControllable( spawned_group )
-            AICapZone:SetEngageRange( 30480 )
-            AICapZone:__Start( 1 )
-          end
+    env.info("Cleared group array for " .. drones)
+    for idx,spawner in ipairs(self.Drones[drones]['spawners']) do
+      local spawned_group = spawner:Spawn()
+      env.info("Attempted spawning of " .. drones)
+      if spawned_group then
+        env.info("Spawned a group for " .. drones)
+        table.insert(self.Drones[drones]['groups'],spawned_group)
+        
+        if drones ~= 'easy_drones' then
+          env.info("Got something with smarts")
+          local AICapZone = AI_CAP_ZONE:New( self.Drones[drones]['zone'], 5000, 7000, 500, 780, "BARO")
+          AICapZone:SetControllable( spawned_group )
+          AICapZone:SetEngageRange( 30480 )
+          AICapZone:__Start( 1 )
+        else
+          env.info("Got something with dumbs")
+          spawned_group:OptionROEHoldFire()
+          spawned_group:OptionROTNoReaction()
         end
-      end,
-      {},5,nil,0,nil)
+      end
+    end
   end
 
   function ForEachDrones(self, fn)
@@ -138,6 +142,7 @@ end
 function SetupRangeRespawn(RangeManager)
   RangeManager:ForEachRange(function(range_name, range)
     SCHEDULER:New(nil,function()
+      env.info("Checking units in range " .. range_name)
       local alive_units = 0
       for unitid, unitdata in pairs(range['group']:GetUnits()) do
         if unitdata:IsAlive() then
@@ -145,19 +150,28 @@ function SetupRangeRespawn(RangeManager)
         end
       end
       
+      env.info("Found " .. alive_units .. " alive units")
+      
       if alive_units == 0 then
-        success,schedulerid = pcall(function() SCHEDULER:Remove(range['scheduler_id']) end)
+        success,schedulerid = pcall(function()
+          SCHEDULER:Remove(range['scheduler_id'])
+          env.info("Cleared existing scheduler for respawn") 
+        end)
+        
         RangeManager:SpawnRange(range_name)
+        env.info("Sent request for respawn")
       end
       
-    end,{},0,10,0,nil)
+    end,{},0,10)
     
     for unitid,unitdata in pairs(range['group']:GetUnits()) do
       unitdata:HandleEvent(EVENTS.Dead)
       function unitdata:OnEventDead(EventData)
-        success,schedulerid = pcall(function() SCHEDULER:Remove(range['scheduler_id']) end)
+        SCHEDULER:Remove(range['scheduler_id'])
+        env.info('Removed scheduler for range: ' .. range['label'])
         scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,nil,0,nil)
         range['scheduler_id'] = s_id
+        env.info('Added scheduler for range: ' .. range['label'] .. ' with sid ' .. s_id)
       end
     end
   end)
@@ -169,9 +183,19 @@ function SetupTankers()
   local spawn_tkr_2 = SPAWN:New('Tanker 2'):InitLimit(1,0):InitRepeat()
   
   SCHEDULER:New(nil,function()
-     spawn_tkr_1:Spawn()
-     spawn_tkr_2:Spawn()
-  end,{},0,10,0,nil)
+     local tnk1 = spawn_tkr_1:Spawn()
+     local tnk2 = spawn_tkr_2:Spawn()
+     
+     if tnk1 then
+       env.info("Spawned Tanker 1")
+       MESSAGE:New("Respawned US Tanker",10,"Respawns"):ToAll()
+     end
+     
+     if tnk2 then
+       env.info("Spawned Tanker 2")
+       MESSAGE:New("Respawned RUS Tanker",10,"Respawns"):ToAll()
+     end
+  end,{},0,120,0.3,nil)
 end
 
 
@@ -180,9 +204,19 @@ function SetupAWACS()
   local spawn_awacs_2 = SPAWN:New('AWACS 2'):InitLimit(1,0):InitRepeat()
   
   SCHEDULER:New(nil,function()
-     spawn_awacs_1:Spawn()
-     spawn_awacs_2:Spawn()
-  end,{},0,10,0,nil)
+     local awacs1 = spawn_awacs_1:Spawn()
+     local awacs2 = spawn_awacs_2:Spawn()
+     
+     if awacs1 then
+       env.info("Spawned AWACS1")
+       MESSAGE:New("Respawned USA AWACS South",10,"Respawns"):ToAll()
+     end
+     
+     if awacs2 then
+       env.info("Spawned AWACS2")
+       MESSAGE:New("Respawned RUS AWACS North",10,"Respawns"):ToAll()
+     end
+  end,{},0,120,0.3,nil)
 end
 
 rangeManager = RangeManager()
@@ -197,10 +231,9 @@ SCHEDULER:New(nil,function()
   droneManager:SpawnDrones('easy_drones')
   droneManager:SpawnDrones('medium_drones')
   droneManager:SpawnDrones('hard_drones')
-end,{},10,10,0, nil)
+end,{},10,150,0, nil)
 
 SCHEDULER:New(nil,function()CreateRangeRadioMenus(rangeManager)end,{},10,nil,0)
 SCHEDULER:New(nil,function()SetupRangeRespawn(rangeManager)end,{},10,nil,0)
 SetupTankers()
 SetupAWACS()
-
