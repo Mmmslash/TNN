@@ -50,6 +50,11 @@ function RangeManager()
         env.info("Destroyed range " .. self.Ranges[range]['label'])
      end)
     env.info("Scheduling ReSpawn")
+    if self.Ranges[range]['scheduler_id'] then
+      SCHEDULER:Remove(self.Ranges[range]['scheduler_id'])
+    end
+    
+    self.Ranges[range]['scheduler_id'] = nil
     SCHEDULER:New(nil,function()self.Ranges[range]['group'] = self.Ranges[range]['spawner']:Spawn()end,{},5)
     env.info("Respawn scheduled")
   end
@@ -144,36 +149,25 @@ function SetupRangeRespawn(RangeManager)
     SCHEDULER:New(nil,function()
       env.info("Checking units in range " .. range_name)
       local alive_units = 0
+      local total_units = range['group']:GetInitialSize()
       for unitid, unitdata in pairs(range['group']:GetUnits()) do
         if unitdata:IsAlive() then
           alive_units = alive_units + 1
         end
       end
       
-      env.info("Found " .. alive_units .. " alive units")
+      env.info("Found " .. alive_units .. " alive units out of " .. total_units .. " total")
       
       if alive_units == 0 then
-        success,schedulerid = pcall(function()
-          SCHEDULER:Remove(range['scheduler_id'])
-          env.info("Cleared existing scheduler for respawn") 
-        end)
-        
         RangeManager:SpawnRange(range_name)
         env.info("Sent request for respawn")
+      elseif alive_units ~= total_units and range['scheduler_id'] == nil then
+        env.info('Scheduling Respawn for ' .. range_name)
+        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,nil,0,nil)
+        range['scheduler_id'] = s_id
       end
       
     end,{},0,10)
-    
-    for unitid,unitdata in pairs(range['group']:GetUnits()) do
-      unitdata:HandleEvent(EVENTS.Dead)
-      function unitdata:OnEventDead(EventData)
-        SCHEDULER:Remove(range['scheduler_id'])
-        env.info('Removed scheduler for range: ' .. range['label'])
-        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,nil,0,nil)
-        range['scheduler_id'] = s_id
-        env.info('Added scheduler for range: ' .. range['label'] .. ' with sid ' .. s_id)
-      end
-    end
   end)
 end
 
