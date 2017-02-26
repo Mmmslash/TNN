@@ -136,15 +136,19 @@ end
 
 function CreateRangeRadioMenus(RangeManager)
   env.info("setting up radios")
-  local ranges_parent_menu = MENU_MISSION:New("Ranges")
+  
   local range_manager = RangeManager
-  range_manager:ForEachRange(function(range_name, range)
-    local range_parent_menu = MENU_MISSION:New(range.label, ranges_parent_menu)
-    MENU_MISSION_COMMAND:New("Start Smoke", range_parent_menu, RangeSmoke, range)
-    MENU_MISSION_COMMAND:New("Respawn", range_parent_menu, rangeManager.SpawnRange, rangeManager, range_name)
-    SET_CLIENT:New():FilterCoalitions("blue"):FilterStart():ForEachClient(function(client)
-      MENU_CLIENT_COMMAND:New(client,"Get Bearing And Range", range_parent_menu, SendBearingToRangeMessageToClient, client, range)
-    end)
+  SET_CLIENT:New():FilterCoalitions("blue"):FilterStart():ForEachClient(function(client)
+      client:Alive(function(client)
+        local ranges_parent_menu = MENU_CLIENT:New(client, "Ranges")
+        range_manager:ForEachRange(function(range_name, range)
+          local range_parent_menu = MENU_CLIENT:New(client, range.label, ranges_parent_menu)
+          
+          MENU_CLIENT_COMMAND:New(client, "Start Smoke", range_parent_menu, RangeSmoke, range)
+          MENU_CLIENT_COMMAND:New(client, "Respawn", range_parent_menu, rangeManager.SpawnRange, rangeManager, range_name)
+          MENU_CLIENT_COMMAND:New(client, "Get Bearing And Range", range_parent_menu, SendBearingToRangeMessageToClient, client, range)
+        end)  
+      end)
   end)
 end
 
@@ -224,42 +228,39 @@ rangeManager:SpawnRange('ship_range_easy')
 rangeManager:SpawnRange('ship_range_medium')
 
 function SendBearingToRangeMessageToClient(client, range)
-  local messageText = [[
-  Bearing and distance to %range_name% is: %bearing%° - %distance%
-  ]]
-  messageText = string.gsub(messageText, "%range_name%", range.label)
-  messageText = string.gsub(messageText, "%bearing%", GetBearingToRange(client, range))
-  messageText = string.gsub(messageText, "%distance%", GetDistanceToRange(client, range))
+  local messageText = "Bearing and distance to %range_name% is: %BRTEXT%"
+  messageText = string.gsub(messageText, "%%range_name%%", range.label)
+  messageText = string.gsub(messageText, "%%BRTEXT%%", GetBearingAndRangeText(client:GetVec2(), range.zone:GetVec2()))
 
-  local message = MESSAGE:New(messageText,MessageDuration,MessageCategory)
+  local message = MESSAGE:New(messageText,MessageDuration,MessageCategory):ToClient(client)
 end
 
-function GetDistanceToRange(positionable, range)
-  local range_loc_vec2 = ZONE_BASE.GetVec2(range.zone)
-  local positionable_vec2 = POSITIONABLE.GetPointVec2(positionable)
+function GetBearingAndRangeText(first_vec2, second_vec2)
+    local positionable1_vec3 = POINT_VEC3:NewFromVec2(first_vec2, 0)
+    
+    local positionable2_vec3 = POINT_VEC3:NewFromVec2(second_vec2, 0)
 
-  return positionable_vec2:DistanceFromVec2(range_loc_vec2)
+    local angle_degrees, distance = GetBearingAndRange(positionable1_vec3, positionable2_vec3)
+  
+    local distance_unit = ''
+    if positionable1_vec3:IsMetric() then
+      distance = UTILS.Round(distance / 1000, 2)
+      distance_unit = 'km'
+    else
+      distance = UTILS.Round(UTILS.MetersToNM(dsitance), 2)
+      distance_unit = 'nm'
+    end    
+    local s = string.format( '%03d', angle_degrees ) .. ' for ' .. distance .. distance_unit
+    return s
 end
 
-function GetBearingToRange(positionable, range)
-  local range_loc_vec2 = ZONE_BASE.GetVec2(range.zone)
-  local positionable_vec2 = POSITIONABLE.GetVec2(positionable)
-  return GetBearingFrom(positionable_vec2).to(range_loc_vec2)
+function GetBearingAndRange(positionable1_vec3, positionable2_vec3)
+    local direction_vec3 = positionable1_vec3:GetDirectionVec3(positionable2_vec3)
+    local angle_degrees = UTILS.Round(UTILS.ToDegree(positionable1_vec3:GetDirectionRadians(direction_vec3)), 0)
+    local distance = positionable1_vec3:Get2DDistance(positionable2_vec3)
+    
+    return angle_degrees, distance
 end
-
-function GetBearingFrom(pt1)
-  local toFunc = function(pt2)
-    vx,vy = pt2.x - pt1.x, pt2.y - pt1.y
-
-    t = math.atan2(vx,vy)
-    if t < 0.0 then
-      t = t + 6.283
-    end
-    return math.deg(t)
-  end
-  return {to = toFunc}
-end
-
 
 rangeManager = RangeManager()
 rangeManager:ForEachRange(function(range_name, _range)
