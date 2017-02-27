@@ -220,13 +220,6 @@ function SetupAWACS()
   end,{},0,120,0.3,nil)
 end
 
-rangeManager = RangeManager()
-rangeManager:SpawnRange('easy_range')
-rangeManager:SpawnRange('medium_range')
-rangeManager:SpawnRange('hard_range')
-rangeManager:SpawnRange('ship_range_easy')
-rangeManager:SpawnRange('ship_range_medium')
-
 function SendBearingToRangeMessageToClient(client, range)
   local messageText = "Bearing and distance to %range_name% is: %BRTEXT%"
   messageText = string.gsub(messageText, "%%range_name%%", range.label)
