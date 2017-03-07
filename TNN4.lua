@@ -50,8 +50,8 @@ function RangeManager()
         env.info("Destroyed range " .. self.Ranges[range]['label'])
      end)
     env.info("Scheduling ReSpawn")
-    if self.Ranges[range]['scheduler_id'] then
-      SCHEDULER:Remove(self.Ranges[range]['scheduler_id'])
+    if self.Ranges[range]['scheduler_id'] and self.Ranges[range]['scheduler'] then
+      self.Ranges[range]['scheduler']:Remove(self.Ranges[range]['scheduler_id'])
     end
     
     self.Ranges[range]['scheduler_id'] = nil
@@ -64,7 +64,7 @@ function RangeManager()
       fn(idx, range)
     end
   end
-
+  
   return { SpawnRange = SpawnRange,
     Ranges = ranges,
     ForEachRange = ForEachRange }
@@ -92,18 +92,26 @@ function DroneManager()
       ['label'] = "Hard Air-to-Air Drones"
     }
   }
+  
+  function RespawnDrones(self, dronegroup_name)
+    env.info(" --- Killing off " .. dronegroup_name .. " for being out of bounds ---- ")
+    for i, group in pairs(self.Drones[dronegroup_name]['groups']) do
+      env.info("----DESTROYING GROUP [ " .. group:GetName() .. " ] FROM DRONEGROUP [ " .. dronegroup_name .." ]")
+      group:Destroy()
+    end
+    self:SpawnDrones(dronegroup_name)  
+  end
 
   function SpawnDrones(self, drones)
     env.info("Trying to spawn drone: " .. drones)
-    self.Drones[drones]['groups'] = {}
-    env.info("Cleared group array for " .. drones)
     for idx,spawner in ipairs(self.Drones[drones]['spawners']) do
       local spawned_group = spawner:Spawn()
       env.info("Attempted spawning of " .. drones)
       if spawned_group then
         env.info("Spawned a group for " .. drones)
-        table.insert(self.Drones[drones]['groups'],spawned_group)
-        
+        if self.Drones[drones]['groups'] == nil then self.Drones[drones]['groups'] = {} end
+        table.insert(self.Drones[drones]['groups'], spawned_group)
+        env.info("added new group to drones grouplist")
         if drones ~= 'easy_drones' then
           env.info("Got something with smarts")
           local AICapZone = AI_CAP_ZONE:New( self.Drones[drones]['zone'], 5000, 7000, 500, 780, "BARO")
@@ -115,6 +123,8 @@ function DroneManager()
           spawned_group:OptionROEHoldFire()
           spawned_group:OptionROTNoReaction()
         end
+      else
+        env.info("Did not spawn group for " .. drones)
       end
     end
   end
@@ -127,7 +137,8 @@ function DroneManager()
 
   return { SpawnDrones = SpawnDrones,
            Drones = drones,
-           ForEachDrones = ForEachDrones }
+           ForEachDrones = ForEachDrones, 
+           RespawnDrones = RespawnDrones }
 end
 
 function RangeSmoke(range)
@@ -173,6 +184,7 @@ function SetupRangeRespawn(RangeManager)
         env.info('Scheduling Respawn for ' .. range_name)
         scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,nil,0,nil)
         range['scheduler_id'] = s_id
+        range['scheduler'] = scheduler
       end
       
     end,{},0,10)
@@ -255,6 +267,23 @@ function GetBearingAndRange(positionable1_vec3, positionable2_vec3)
     return angle_degrees, distance
 end
 
+function ScheduleBoundaryChecks(drone_name, drone_info, droneManager)
+   SCHEDULER:New(nil, function()
+      env.info("----- Checking DroneGroup [ " .. drone_name .. " ] FOR BOUNDARY VIOLATIONS ------")
+      for i, group in pairs(drone_info['groups']) do
+        if not group:IsAlive() then -- Group has been killed or removed. Remove it from the table and continue to the next one..
+          table.remove(drone_info['groups'], i)
+        else
+          env.info(" ---- Checking subgroup [ " .. group:GetName() .. " ] of dronegroup [ " .. drone_name .." ] ---------")
+          if not group:IsCompletelyInZone(drone_info['zone']) then
+             env.info("---- DRONES WANDERED  - RESPAWNING " .. drone_name .. " ------")
+             droneManager:RespawnDrones(drone_name)
+          end
+        end
+      end
+   end, {}, 10, 20, 0, nil)
+end
+
 rangeManager = RangeManager()
 rangeManager:ForEachRange(function(range_name, _range)
   rangeManager:SpawnRange(range_name)
@@ -262,9 +291,10 @@ end)
 
 droneManager = DroneManager()
 SCHEDULER:New(nil,function()
-  droneManager:SpawnDrones('easy_drones')
-  droneManager:SpawnDrones('medium_drones')
-  droneManager:SpawnDrones('hard_drones')
+  droneManager:ForEachDrones(function(drone_name, drone_info)
+    droneManager:SpawnDrones(drone_name)
+    ScheduleBoundaryChecks(drone_name, drone_info, droneManager)
+  end)
 end,{},10,150,0, nil)
 
 SCHEDULER:New(nil,function()CreateRangeRadioMenus(rangeManager)end,{},10,nil,0)
