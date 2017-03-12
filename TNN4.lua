@@ -182,7 +182,7 @@ function SetupRangeRespawn(RangeManager)
         env.info("Sent request for respawn")
       elseif alive_units ~= total_units and range['scheduler_id'] == nil then
         env.info('Scheduling Respawn for ' .. range_name)
-        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},600,nil,0,nil)
+        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},1200,nil,0,nil)
         range['scheduler_id'] = s_id
         range['scheduler'] = scheduler
       end
@@ -293,9 +293,12 @@ droneManager = DroneManager()
 SCHEDULER:New(nil,function()
   droneManager:ForEachDrones(function(drone_name, drone_info)
     droneManager:SpawnDrones(drone_name)
-    ScheduleBoundaryChecks(drone_name, drone_info, droneManager)
   end)
 end,{},10,150,0, nil)
+
+droneManager:ForEachDrones(function(drone_name, drone_info)
+  ScheduleBoundaryChecks(drone_name, drone_info, droneManager)
+end)
 
 SCHEDULER:New(nil,function()CreateRangeRadioMenus(rangeManager)end,{},10,nil,0)
 SCHEDULER:New(nil,function()SetupRangeRespawn(rangeManager)end,{},10,nil,0)
