@@ -55,8 +55,8 @@ function RangeManager()
     end
     
     self.Ranges[range]['scheduler_id'] = nil
-    SCHEDULER:New(nil,function()self.Ranges[range]['group'] = self.Ranges[range]['spawner']:Spawn()end,{},5)
-    env.info("Respawn scheduled")
+    self.Ranges[range]['group'] = self.Ranges[range]['spawner']:Spawn()
+    return self.Ranges[range]['group']
   end
 
   function ForEachRange(self, fn)
@@ -163,31 +163,62 @@ function CreateRangeRadioMenus(RangeManager)
   end)
 end
 
-function SetupRangeRespawn(RangeManager)
-  RangeManager:ForEachRange(function(range_name, range)
-    SCHEDULER:New(nil,function()
-      env.info("Checking units in range " .. range_name)
-      local alive_units = 0
-      local total_units = range['group']:GetInitialSize()
-      for unitid, unitdata in pairs(range['group']:GetUnits()) do
+function ConfigureRangeGroupRespawn(rangeManager, range_name, group)
+    group:HandleEvent(EVENTS.Dead)
+    
+    function isGroupDead(isDeadGroup)
+      env.info("Checking group " .. isDeadGroup.GroupName)
+      for unitid, unitdata in pairs(isDeadGroup:GetUnits()) do
         if unitdata:IsAlive() then
-          alive_units = alive_units + 1
+          return false
         end
       end
-      
-      env.info("Found " .. alive_units .. " alive units out of " .. total_units .. " total")
-      
-      if alive_units == 0 then
-        RangeManager:SpawnRange(range_name)
-        env.info("Sent request for respawn")
-      elseif alive_units ~= total_units and range['scheduler_id'] == nil then
-        env.info('Scheduling Respawn for ' .. range_name)
-        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},1200,nil,0,nil)
-        range['scheduler_id'] = s_id
-        range['scheduler'] = scheduler
+      return true
+    end
+    
+    function group:OnEventDead(eventData)
+      local range = rangeManager.Ranges[range_name] 
+      if (not isGroupDead(self)) then env.info("Group is alive") else env.info("Group is dead!") end
+      if (isGroupDead(self) and range['spawn_sched'] == nil) then
+        MESSAGE:New(range['label'] .. " has been completely obliterated and will be respawning in 60 seconds"):ToAll()
+        range['spawn_sched'], sid = SCHEDULER:New(nil,function(rangeManager, range_name)
+          range['spawn_sched'] = nil
+          local new_group = rangeManager:SpawnRange(range_name)
+          ConfigureRangeGroupRespawn(rangeManager, range_name, new_group)
+        end,{rangeManager, range_name},60,nil,0,nil)
+        function group:OnEventDead(eventData) end
       end
-      
-    end,{},0,10)
+    end
+end
+
+function SetupRangeRespawn(RangeManager)
+  RangeManager:ForEachRange(function(range_name, range)
+      local group = range['group'] 
+       ConfigureRangeGroupRespawn(RangeManager,range_name,group)
+       --Keeping this around in case i need to refer to its logic again.
+ --    SCHEDULER:New(nil,function()
+--      env.info("Checking units in range " .. range_name)
+--      local alive_units = 0
+--      local total_units = range['group']:GetInitialSize()
+--      for unitid, unitdata in pairs(range['group']:GetUnits()) do
+--        if unitdata:IsAlive() then
+--          alive_units = alive_units + 1
+--        end
+--      end
+--      
+--      env.info("Found " .. alive_units .. " alive units out of " .. total_units .. " total")
+--      
+--      if alive_units == 0 then
+--        RangeManager:SpawnRange(range_name)
+--        env.info("Sent request for respawn")
+--      elseif alive_units ~= total_units and range['scheduler_id'] == nil then
+--        env.info('Scheduling Respawn for ' .. range_name)
+--        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},1200,nil,0,nil)
+--        range['scheduler_id'] = s_id
+--        range['scheduler'] = scheduler
+--      end
+--      
+--    end,{},0,10)
   end)
 end
 
