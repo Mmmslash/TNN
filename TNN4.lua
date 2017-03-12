@@ -148,6 +148,13 @@ end
 function CreateRangeRadioMenus(RangeManager)
   env.info("setting up radios")
   
+  function rangeRespawn(rangeManager, range_name)
+    local group = rangeManager.Ranges[range_name]['group']
+    function group:OnEventDead(eventData) end
+    group = rangeManager:SpawnRange(range_name)
+    ConfigureRangeGroupRespawn(rangeManager,range_name,group)
+  end
+  
   local range_manager = RangeManager
   SET_CLIENT:New():FilterCoalitions("blue"):FilterStart():ForEachClient(function(client)
       client:Alive(function(client)
@@ -156,7 +163,7 @@ function CreateRangeRadioMenus(RangeManager)
           local range_parent_menu = MENU_CLIENT:New(client, range.label, ranges_parent_menu)
           
           MENU_CLIENT_COMMAND:New(client, "Start Smoke", range_parent_menu, RangeSmoke, range)
-          MENU_CLIENT_COMMAND:New(client, "Respawn", range_parent_menu, rangeManager.SpawnRange, rangeManager, range_name)
+          MENU_CLIENT_COMMAND:New(client, "Respawn", range_parent_menu, rangeRespawn, rangeManager, range_name)
           MENU_CLIENT_COMMAND:New(client, "Get Bearing And Range", range_parent_menu, SendBearingToRangeMessageToClient, client, range)
         end)  
       end)
