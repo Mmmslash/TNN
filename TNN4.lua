@@ -1,6 +1,6 @@
 function RangeManager()
   local ranges = {
-      ["easy_range"] = { ['spawner'] = SPAWN:New("Easy Range"):InitLimit(20,0),
+      ["easy_range"] = { ['spawner'] = SPAWN:New("Easy Range"):InitLimit(60,0),
                          ['zone'] = ZONE:New("Easy Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Blue,
@@ -8,7 +8,7 @@ function RangeManager()
                          ['latlong'] = '41 50\' 46" N   41 46\' 51" E',
                          ['mgrs'] = '37T GG 32306 36033'
                        },
-      ["medium_range"] = { ['spawner'] = SPAWN:New("Medium Range"):InitLimit(22,0),
+      ["medium_range"] = { ['spawner'] = SPAWN:New("Medium Range"),
                          ['zone'] = ZONE:New("Medium Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Orange,
@@ -16,7 +16,7 @@ function RangeManager()
                          ['latlong'] = '42 10\' 40" N   42 28\' 54" E',
                          ['mgrs'] = '38T KM 92029 72577'
                        },
-      ["hard_range"] = { ['spawner'] = SPAWN:New("Hard Range"):InitLimit(30,0),
+      ["hard_range"] = { ['spawner'] = SPAWN:New("Hard Range"),
                          ['zone'] = ZONE:New("Hard Range"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Red,
@@ -24,7 +24,7 @@ function RangeManager()
                          ['latlong'] = '42 45\' 33" N 42 1\' 52" E',
                          ['mgrs'] = '38T KN 57013 38373'
                        },
-      ["ship_range_easy"] = { ['spawner'] = SPAWN:New("Ship Range Easy"):InitLimit(30,0),
+      ["ship_range_easy"] = { ['spawner'] = SPAWN:New("Ship Range Easy"),
                          ['zone'] = ZONE:New("Ship Range Easy"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Green,
@@ -32,7 +32,7 @@ function RangeManager()
                          ['latlong'] = '41 29\' 38" N 41 11\' 31" E',
                          ['mgrs'] = '38T KN 57013 38373'
                        },
-      ["ship_range_medium"] = { ['spawner'] = SPAWN:New("Ship Range Medium"):InitLimit(30,0),
+      ["ship_range_medium"] = { ['spawner'] = SPAWN:New("Ship Range Medium"),
                          ['zone'] = ZONE:New("Ship Range Medium"),
                          ['type'] = 'ground',
                          ['smoke_color'] = SMOKECOLOR.Green,
@@ -201,31 +201,7 @@ end
 function SetupRangeRespawn(RangeManager)
   RangeManager:ForEachRange(function(range_name, range)
       local group = range['group'] 
-       ConfigureRangeGroupRespawn(RangeManager,range_name,group)
-       --Keeping this around in case i need to refer to its logic again.
- --    SCHEDULER:New(nil,function()
---      env.info("Checking units in range " .. range_name)
---      local alive_units = 0
---      local total_units = range['group']:GetInitialSize()
---      for unitid, unitdata in pairs(range['group']:GetUnits()) do
---        if unitdata:IsAlive() then
---          alive_units = alive_units + 1
---        end
---      end
---      
---      env.info("Found " .. alive_units .. " alive units out of " .. total_units .. " total")
---      
---      if alive_units == 0 then
---        RangeManager:SpawnRange(range_name)
---        env.info("Sent request for respawn")
---      elseif alive_units ~= total_units and range['scheduler_id'] == nil then
---        env.info('Scheduling Respawn for ' .. range_name)
---        scheduler,s_id = SCHEDULER:New(nil,RangeManager.SpawnRange,{RangeManager, range_name},1200,nil,0,nil)
---        range['scheduler_id'] = s_id
---        range['scheduler'] = scheduler
---      end
---      
---    end,{},0,10)
+      ConfigureRangeGroupRespawn(RangeManager,range_name,group)
   end)
 end
 
@@ -325,6 +301,7 @@ end
 rangeManager = RangeManager()
 rangeManager:ForEachRange(function(range_name, _range)
   rangeManager:SpawnRange(range_name)
+  env.info ("------Spawned range ".. range_name .. " -------------")
 end)
 
 droneManager = DroneManager()
@@ -339,6 +316,10 @@ droneManager:ForEachDrones(function(drone_name, drone_info)
 end)
 
 SCHEDULER:New(nil,function()CreateRangeRadioMenus(rangeManager)end,{},10,nil,0)
-SCHEDULER:New(nil,function()SetupRangeRespawn(rangeManager)end,{},10,nil,0)
+SCHEDULER:New(nil,function()
+  env.info("-----------Scheduling Range Respawn System-------------")
+  SetupRangeRespawn(rangeManager)
+  
+end,{},10,nil,0)
 SetupTankers()
 SetupAWACS()
