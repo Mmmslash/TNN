@@ -44,7 +44,7 @@ ctld.slingLoad = false -- if false, crates can be used WITHOUT slingloading, by 
 ctld.enableSmokeDrop = true -- if false, helis and c-130 will not be able to drop smoke
 
 ctld.maxExtractDistance = 125 -- max distance from vehicle to troops to allow a group extraction
-ctld.maximumDistanceLogistic = 200 -- max distance from vehicle to logistics to allow a loading or spawning operation
+ctld.maximumDistanceLogistic = 300 -- max distance from vehicle to logistics to allow a loading or spawning operation
 ctld.maximumSearchDistance = 4000 -- max distance for troops to search for enemy
 ctld.maximumMoveDistance = 2000 -- max distance for troops to move from drop point if no enemy is nearby
 
@@ -206,14 +206,14 @@ ctld.wpZones = {
 
 -- Use any of the predefined names or set your own ones
 ctld.transportPilotNames = {
-    "Huey 1",
-    "Huey 2",
-    "Huey 3",
-    "Huey 4",
+    "Huey1",
+    "Huey2",
+    "Huey3",
+    "Huey4",
     "Huey Destroyer",
-    "Huey 5",
-    "Huey 6",
-    "Huey 8",
+    "Huey5",
+    "Huey6",
+    "Huey8",
     "helicargo9",
     "helicargo10",
 
@@ -368,14 +368,14 @@ ctld.extractableGroups = {
 -- When a logistic unit is destroyed, you will no longer be able to spawn crates
 
 ctld.logisticUnits = {
-    "FARP Logi1",
-    "FARP Logi2",
-    "FARP Logi3",
-    "FARP Logi4",
-    "FARP Logi5",
-    "FARP Logi6",
-    "FARP Logi7",
-    "FARP Logi8",
+    "logistic1",
+    "logistic2",
+    "logistic3",
+    "logistic4",
+    "logistic5",
+    "logistic6",
+    "logistic7",
+    "logistic8",
     "logistic9",
     "logistic10",
 }
